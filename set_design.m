@@ -15,7 +15,7 @@ design.trials_per_condition      = [60, 10, 10];
 
 %%%% TRIAL INFORMATION
 % design.pages.stim_per_trial contains the number of STIMULI presented to a
-% participant. Note that in case designe.use_ISI = 1 the subsequent
+% participant. Note that in case design.use_ISI = 1 the subsequent
 % programs will have (design.pages.stim_per_trial*2)-1 presentations.
 design.pages.stim_per_trial      = 18;        
 % design.pages.pre_target1 contains the number of pages that can preceed
