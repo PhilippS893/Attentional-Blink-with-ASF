@@ -81,7 +81,7 @@ responseCounter = 0; % counts the number of responses given
 responsePages = atrial.nPages-2:atrial.nPages;  % the last three pages are response pages
 [~,n_categories] = size(Cfg.design.target_numbers);
 
-page_idx_t1 = 1 + Cfg.T1_idx(atrial.trialNumber);
+page_idx_t1 = Cfg.T1_idx(atrial.trialNumber);
 %page_idx_t2 = 1 + Cfg.T2_idx(atrial.trialNumber);
 
 % the correct responses for this experiment are 3-fold:
@@ -116,6 +116,7 @@ randT2 = randi([Cfg.design.target_numbers(1,C) Cfg.design.target_numbers(end,C)]
 while randT2==pic1
     randT2 = randi([Cfg.design.target_numbers(1,C) Cfg.design.target_numbers(end,C)],1,1);
 end
+        
 
 %%%%%%%% PS CODE END %%%%%%%%
 
@@ -175,19 +176,25 @@ for i = 1:atrial.startRTonPage-1
         
         %%%%%%%% PS CODE %%%%%%%%
         % We want to superimpose numbers ontop of the stimuli
-        if i > 1 && i ~= page_idx_t1 && ...
+        if i > 1 && i ~= page_idx_t1 && atrial.pageNumber(i)~=Cfg.stimuli.blank && ...
                 ~any( ismember( atrial.pageNumber(i), Cfg.stimuli.targets ) )
             
-%             msg = sprintf('%d',vals(i,:));
-%             Screen('TextSize',windowPtr, instruction_font_size);
-%             DrawFormattedText(windowPtr, msg,'center','center',confound_color);
-%             Screen('TextSize',windowPtr, standard_font_size);
+            if Cfg.design.overlay(i)
+                [arrows, ~] = generate_arrow_vector(1,5);
+                while all(arrows==Cfg.arrow_for_T1(atrial.trialNumber,:))
+                    [arrows, ~] = generate_arrow_vector(1,5);
+                end
+                msg = char(arrows);
+                Screen('TextSize',windowPtr, T1_font_size);
+                DrawFormattedText(windowPtr, msg,'center','center',confound_color);
+                Screen('TextSize',windowPtr, standard_font_size);
+            end
                         
         elseif i == page_idx_t1
             
 %             math_result = vals(i,1)+vals(i,3);
 %             msg = sprintf('%d+%d',vals(i,1),vals(i,3));
-            msg = char(Cfg.arrow_for_T1(adjustment.trial_ctr,:));
+            msg = char(Cfg.arrow_for_T1(atrial.trialNumber,:));
             Screen('TextSize',windowPtr, T1_font_size);
             DrawFormattedText(windowPtr, msg,'center','center',target_color);
             Screen('TextSize',windowPtr, standard_font_size);
@@ -582,3 +589,18 @@ TrialInfo.Response = this_response; %KEY AND RT
 TrialInfo.timing = timing; %TIMING OF PAGES
 TrialInfo.StartRTMeasurement = StartRTMeasurement; %TIMESTAMP START RT
 TrialInfo.EndRTMeasurement = EndRTMeasurement; %TIMESTAMP END RT
+
+
+%%% HELPER FUNCTION TO GENERATE RANDOM ARROWS
+function [arrows, correct_response] = generate_arrow_vector(n_trials,n_arrows)
+
+% generate zeros and ones (0 = <; 1 = >)
+arrow_direction = randi([0;1],n_trials,n_arrows);
+while any( sum( arrow_direction, 2 ) ==0 ) || any( sum( arrow_direction, 2 ) == n_arrows )
+    arrow_direction = randi([0;1],n_trials,n_arrows);
+end
+arrows = zeros(n_trials,n_arrows);
+arrows(arrow_direction==0) = 60;
+arrows(arrow_direction==1) = 62;
+
+correct_response = sum(arrow_direction,2)>=3;

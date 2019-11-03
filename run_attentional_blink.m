@@ -18,6 +18,7 @@ error_check();
 %% SET ASF CONFIGS
 Cfg = [];
 Cfg.design = set_design;
+Cfg.design.overlay = get_overlay_vector(Cfg);
 Cfg.stimuli = get_indices_from_std();
 Cfg.responseSettings.multiResponse = 'allowSingleResponse';
 Cfg.userSuppliedTrialFunction = @attentional_blink_presentation;
@@ -113,6 +114,45 @@ end
 % check if a stimulus file exists. If not, create one
 if ~exist('stimuli.std','file')
     create_std_file();
+end
+
+function overlay = get_overlay_vector(Cfg)
+
+if Cfg.design.use_ISI
+    stim_per_trial = 2*Cfg.design.pages.stim_per_trial-1;
+else
+    stim_per_trial = Cfg.design.pages.stim_per_trial;
+end
+
+% the number of pages is equal to 1 blank + stim_per_trial + 3 response
+% pages
+nPages = 1 + stim_per_trial + 3;
+
+overlay = zeros(nPages,1);
+% set a logical vector for the arrows on the confound images
+switch Cfg.design.confound_overlay
+    case 'none'
+        % do nothing
+    case 'all'
+        if Cfg.design.use_ISI
+            overlay(2:2:end-3) = 1;
+        else
+            overlay(2:end-3) = 1;
+        end
+    case 'odd'
+        if Cfg.design.use_ISI
+            overlay(2:4:end-3) = 1;
+        else
+            overlay(2:2:end-3) = 1;
+        end
+    case 'even'
+        if Cfg.design.use_ISI
+            overlay(4:4:end-3) = 1;
+        else
+            overlay(3:2:end-3) = 1;
+        end
+    otherwise
+        error('wrong option for design.confound_overlay');
 end
 
 function [arrows, correct_response] = generate_arrow_vector(n_trials,n_arrows)

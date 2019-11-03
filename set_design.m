@@ -29,13 +29,18 @@ design.pages.pre_target1         = 6;
 design.pages.btwn_targets        = [2 7 2];    
 % NOTE: the pages until the end are computed based on the information above. 
 
+%%% SET VARIABLES FOR STUFF SUPERIMPOSED ON CONFOUNDS
+% design.confound_overlay can either be 'none, 'all', 'odd', or 'even'
+% This determines whether arrows are shown on all, odd, or even confounds.
+design.confound_overlay = 'odd';
+
 %%%% SET THE TIMING VARIABLES
 % NOTE: page presentation is measured in frames 
 % (1 frame = 16.6666ms)
 design.timing.stimulus_time      = 6;         
 design.timing.fixation_time      = 6;       
-design.timing.response_time      = 30;       
-design.timing.ISI_time           = 6;
+design.timing.response_time      = 6;       
+design.timing.ISI_time           = 1;
 
 % Provide search strings here that are part of the 'targets' stimuli in the
 % './stimuli/targets/*' directory.
