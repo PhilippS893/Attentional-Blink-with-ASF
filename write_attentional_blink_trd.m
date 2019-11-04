@@ -18,10 +18,12 @@ function Cfg = write_file( filename, trials, Cfg )
 
 % permute the trials
 this_permutation = randperm(n_trials,n_trials);
-% we don't want the same trials back to back
-while sum( diff(trials.codes(this_permutation))==0 ) > 0
-    this_permutation = randperm(n_trials,n_trials);
-end
+% % we don't want the same trials back to back
+%%%% PS; WITH MANY TRIALS THIS LEADS TO A PRETTY LONG LOOP. CONSIDER BE
+%%%% FINE WITH A RANDOM PERMUTATION
+% while sum( diff(trials.codes(this_permutation))==0 ) > 0
+%     this_permutation = randperm(n_trials,n_trials);
+% end
 
 % permutate the necessary variables
 trials.stimuli = trials.stimuli(this_permutation, :);
