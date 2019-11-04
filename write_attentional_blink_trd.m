@@ -115,8 +115,11 @@ ctr = 0;
 % check if the same confounds appear back-to-back or if the same 
 while sum( any( diff( confounds,1,2 )==0 ) ) > 0
     
-    confounds = randi( [Cfg.stimuli.confounds(1) Cfg.stimuli.confounds(end)], ...
-        Cfg.design.n_trials, confounds_in_trial );
+    idx_back2back = sum( diff( confounds,1,2 )==0, 2 )>0;
+    n_back2back = sum(idx_back2back);
+    filler_confounds = randi( [Cfg.stimuli.confounds(1) Cfg.stimuli.confounds(end)], ...
+        n_back2back, confounds_in_trial );
+    confounds(idx_back2back,:) = filler_confounds;
     ctr = ctr + 1;
 end
 
@@ -133,7 +136,7 @@ trial.design_info = {'3';'condition';'short';'long';'ctrl'};
 uni_codes = unique( trial.codes );
 
 % pre allocate some stuff
-pre_t1 = zeros( n_targets, length(uni_codes) );
+pre_t1 = cell( length(uni_codes),1 );
 trial_counter = 0;
 % generate trials for each code
 for iCode = 1:length( uni_codes )
@@ -143,7 +146,13 @@ for iCode = 1:length( uni_codes )
     % draw the same number every time if imin and imax are equal.
     imin = Cfg.design.pages.pre_target1(1);
     imax = Cfg.design.pages.pre_target1(end);
-    pre_t1(:,iCode) = randi( [imin imax], n_targets, 1 );
+    
+    % the number of trials for a code can be different. Thus we need some
+    % way to determine the correct number of trials. We can simply do this
+    % by getting a binary vector of trial.codes for every code and sum up
+    % the result.
+    n_trials_for_code = sum( trial.codes == iCode );
+    pre_t1{iCode} = randi( [imin imax], n_trials_for_code, 1 );
     
     % get the number trials for each code
     trials_for_code = sum( trial.codes == iCode );
@@ -153,12 +162,12 @@ for iCode = 1:length( uni_codes )
         trial_counter = trial_counter + 1;
         
         % get the pre-T1 confounds
-        cfd_pre_T1 = confounds( trial_counter,1:pre_t1(iTrial,iCode) );
+        cfd_pre_T1 = confounds( trial_counter,1:pre_t1{iCode}(iTrial) );
         % get T1
-        T1 = confounds( trial_counter, pre_t1(iTrial,iCode)+1 );
+        T1 = confounds( trial_counter, pre_t1{iCode}(iTrial)+1 );
         % save the index of T1 for each trial such that we know exactly
         % where it is.
-        Cfg.T1_idx(trial_counter) = pre_t1(iTrial,iCode)+1;
+        Cfg.T1_idx(trial_counter) = pre_t1{iCode}(iTrial)+1;
         % get the confounds between targets
         % this varies depending on the code. The last two codes are
         % different from the first ones, therefore we have to check for
