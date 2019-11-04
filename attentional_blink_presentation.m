@@ -81,7 +81,7 @@ responseCounter = 0; % counts the number of responses given
 responsePages = atrial.nPages-2:atrial.nPages;  % the last three pages are response pages
 [~,n_categories] = size(Cfg.design.target_numbers);
 
-page_idx_t1 = Cfg.T1_idx(atrial.trialNumber);
+page_idx_t1 = Cfg.T1_idx(atrial.trialNumber)+1;
 %page_idx_t2 = 1 + Cfg.T2_idx(atrial.trialNumber);
 
 % the correct responses for this experiment are 3-fold:
@@ -101,13 +101,11 @@ atrial.correctResponse(3) = 1; % this will get changed within each trial
 %     vals = randi([2 9],nPages,3);
 % end
 
-T2_idx = zeros(atrial.nPages,1);
 if any(atrial.code==1:n_categories+1)
-    T2_idx(1:end-3) = any(atrial.pageNumber(1:end-3)==Cfg.stimuli.targets);
-    pic1 = atrial.pageNumber(logical(T2_idx));
+    T2_idx = Cfg.T2_idx(atrial.trialNumber)+1;
+    pic1 = atrial.pageNumber(T2_idx);
 else
     pic1 = randi([Cfg.design.target_numbers(1) Cfg.design.target_numbers(end)],1,1);
-
 end
 
 [~,C] = ind2sub(size(Cfg.design.target_numbers),find(Cfg.design.target_numbers==pic1));

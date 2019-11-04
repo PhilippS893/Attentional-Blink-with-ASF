@@ -143,18 +143,20 @@ trial_counter = 0;
 % generate trials for each code
 for iCode = 1:length( uni_codes )
     
-    % randomize the onset of T1 by drawing random numbers of the range
-    % given by the user. No if statement necessary here since with randi we
-    % draw the same number every time if imin and imax are equal.
-    imin = Cfg.design.pages.pre_target1(1);
-    imax = Cfg.design.pages.pre_target1(end);
+
+%     imin = Cfg.design.pages.pre_target1(1);
+%     imax = Cfg.design.pages.pre_target1(end);
     
     % the number of trials for a code can be different. Thus we need some
     % way to determine the correct number of trials. We can simply do this
     % by getting a binary vector of trial.codes for every code and sum up
     % the result.
     n_trials_for_code = sum( trial.codes == iCode );
-    pre_t1{iCode} = randi( [imin imax], n_trials_for_code, 1 );
+    %pre_t1{iCode} = randi( [imin imax], n_trials_for_code, 1 );
+    % randomize the onset of T1 by drawing random numbers of the range
+    % given by the user. No if statement necessary here since with randi we
+    % draw the same number every time if imin and imax are equal.
+    pre_t1{iCode} = choose_T1_onset( Cfg.design.pages.pre_target1,n_trials_for_code );
     
     % get the number trials for each code
     trials_for_code = sum( trial.codes == iCode );
@@ -207,6 +209,12 @@ for iCode = 1:length( uni_codes )
 end
 
 if Cfg.design.use_ISI 
-    Cfg.T2_idx = Cfg.T2_idx.*2;
     Cfg.T1_idx = Cfg.T1_idx.*2;
+    Cfg.T2_idx = Cfg.T2_idx.*2;
 end
+
+function vec = choose_T1_onset( possible_locations, nTrials )
+
+n_choices = length(possible_locations);
+tmp = randi(n_choices,nTrials,1);
+vec = possible_locations(tmp);

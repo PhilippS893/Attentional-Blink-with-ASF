@@ -4,14 +4,14 @@ function design = set_design
 design = [];
 
 %% MAKE YOUR CHANGES HERE
-design.use_ISI                   = 1;    % set to 0 if you do not want an inter stimulus interval
+design.use_ISI                   = 0;    % set to 0 if you do not want an inter stimulus interval
 design.use_step_fx               = 0;    % set to 1 if you want to use a step function
 
 % This variable contains the number of trials for each experimental
 % condition. E.g., 70 short lag (200ms between targets) trials, 10 long lag
 % (e.g. > 500ms between targets) trials, and 10 control targets (i.e., no
 % target 2 present). 
-design.trials_per_condition      = [60, 10, 10];
+design.trials_per_condition      = [60, 30, 15];
 
 %%%% TRIAL INFORMATION
 % design.pages.stim_per_trial contains the number of STIMULI presented to a
@@ -22,7 +22,7 @@ design.pages.stim_per_trial      = 18;
 % the first target. Note that if you want to randomize the onset of T1 this
 % variable has to be a vector containing the range of possible confounds
 % before target1 
-design.pages.pre_target1         = 6;         
+design.pages.pre_target1         = [4:6];         
 % design.pages.btwn_targets contains the number of pages between the first
 % and second target. This variable should be a vector of equal dimensions
 % to design.trials_per_condition
@@ -32,13 +32,25 @@ design.pages.btwn_targets        = [2 7 2];
 %%% SET VARIABLES FOR STUFF SUPERIMPOSED ON CONFOUNDS
 % design.confound_overlay can either be 'none, 'all', 'odd', or 'even'
 % This determines whether arrows are shown on all, odd, or even confounds.
-design.confound_overlay = 'odd';
+% NOTE: By choosing a continuous range for design.pages.pre_target1 = 4:6,
+% for example, it can be that arrows appear on confound->T2->confound no
+% matter if you choose 'even' or 'odd'. If you want them only to appear on
+% even or odd stimuli you have to choose the range of possibile T1 slots
+% accordingly.
+% Example-1: always on odd stimuli
+%   design.pages.pre_target1 = [4 6 8]; 
+%   design.confound_overlay = 'odd';
+% Example-2; always on even stimuli
+%   design.pages.pre_target1 = [5 7 9];
+%   design.confound_overlay = 'even';
+% remember that T1 is the stimulus AFTER those in design.pages.pre_target1!
+design.confound_overlay = 'even';
 
 %%%% SET THE TIMING VARIABLES
 % NOTE: page presentation is measured in frames 
 % (1 frame = 16.6666ms)
-design.timing.stimulus_time      = 6;         
-design.timing.fixation_time      = 6;       
+design.timing.stimulus_time      = 30;         
+design.timing.fixation_time      = 180;       
 design.timing.response_time      = 6;       
 design.timing.ISI_time           = 1;
 
