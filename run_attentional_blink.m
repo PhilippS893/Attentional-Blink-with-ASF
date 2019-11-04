@@ -22,13 +22,13 @@ Cfg.design.overlay = get_overlay_vector(Cfg);
 Cfg.stimuli = get_indices_from_std();
 Cfg.responseSettings.multiResponse = 'allowSingleResponse';
 Cfg.userSuppliedTrialFunction = @attentional_blink_presentation;
-%Cfg.Screen.rect = [1,1,860,590];
+Cfg.Screen.rect = [1,1,860,590];
 Cfg.Screen.color = [86,86,86];
 % Cfg.responseDevice = 'CEDRUSSERIAL';
 % Cfg.serialPortName = '/dev/ttyUSB0';
 % Cfg.responseType = 'buttonDownCedrus';
 Cfg.responseDevice = 'KEYBOARD';
-Cfg.responseType = 'buttonDown'
+Cfg.responseType = 'buttonDown';
 Cfg.enabledKeys = 11:13;
 
 %%% CHANGE SOMETHING HERE IF YOU WANT TO CHANGE FONT SIZE OR TEXT COLOURS
