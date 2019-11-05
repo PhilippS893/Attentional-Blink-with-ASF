@@ -52,8 +52,7 @@ for iRun = 1:howManyRuns
     ExpInfo = ASF('stimuli.std', TRD_filename, output_name, Cfg);
     
     % setup the next run with stimulus duration from the last run.
-    AB.timing.stimulus_time = ExpInfo.TrialInfo(end).trial.pageDuration(2);
-    Cfg.design = AB;
+    Cfg.design.timing.stimulus_time = ExpInfo.TrialInfo(end).trial.pageDuration(2);
     clear attentional_blink_presentation;
     fprintf(1,'\nPress any key to continue...');
     pause
