@@ -25,17 +25,17 @@ Cfg.userSuppliedTrialFunction = @attentional_blink_presentation;
 Cfg.Screen.rect = [1,1,860,590];
 Cfg.Screen.color = [86,86,86];
 % Cfg.responseDevice = 'CEDRUSSERIAL';
-% Cfg.serialPortName = '/dev/ttyUSB0';
+% Cfg.serialPortName = 'COM5';
 % Cfg.responseType = 'buttonDownCedrus';
 Cfg.responseDevice = 'KEYBOARD';
 Cfg.responseType = 'buttonDown';
 Cfg.enabledKeys = 11:13;
 
 %%% CHANGE SOMETHING HERE IF YOU WANT TO CHANGE FONT SIZE OR TEXT COLOURS
-Cfg.txture.standard_font_size      = 50;
-Cfg.txture.instruction_font_size   = 50;
-Cfg.txture.T1_font_size            = 80;
-Cfg.txture.target_color            = [255 0 0];
+Cfg.txture.standard_font_size      = 40;
+Cfg.txture.instruction_font_size   = 40;
+Cfg.txture.T1_font_size            = 60;
+Cfg.txture.target_color            = [255 255 0];
 Cfg.txture.confound_color          = [255 255 255];
 
 %% RUN THE EXPERIMENT
@@ -43,7 +43,11 @@ for iRun = 1:howManyRuns
     % GENERATE NEW TARGET 1 ARROW VECTOR
     [Cfg.arrow_for_T1, Cfg.t1_correct_response] = generate_arrow_vector(Cfg.design.n_trials, 5);
     
-    
+%     if mod(iRun,2)==0
+%         Cfg.design.pages.pre_target1         = 6;         
+%     else
+%         Cfg.design.pages.pre_target1         = [6:9];         
+%     end
     % WRITE THE TRD FILE FOR A GIVEN SUBJECT
     [TRD_filename, Cfg] = write_attentional_blink_trd( Cfg, subject_id, iRun );
     
@@ -51,9 +55,12 @@ for iRun = 1:howManyRuns
     output_name = fullfile(subject_id,sprintf('%s_run%d',subject_id,iRun));
     ExpInfo = ASF('stimuli.std', TRD_filename, output_name, Cfg);
     
+    % IMPLEMENT PERCENT FEEDBACK OF T1
+    
     % setup the next run with stimulus duration from the last run.
     Cfg.design.timing.stimulus_time = ExpInfo.TrialInfo(end).trial.pageDuration(2);
     clear attentional_blink_presentation;
+    print_feedback(ExpInfo.TrialInfo)
     fprintf(1,'\nPress any key to continue...');
     pause
 end
@@ -161,8 +168,23 @@ arrow_direction = randi([0;1],n_trials,n_arrows);
 while any( sum( arrow_direction, 2 ) ==0 ) || any( sum( arrow_direction, 2 ) == n_arrows )
     arrow_direction = randi([0;1],n_trials,n_arrows);
 end
-arrows = zeros(n_trials,n_arrows);
-arrows(arrow_direction==0) = 60;
-arrows(arrow_direction==1) = 62;
-
+% arrows = zeros(n_trials, 2*n_arrows-1);
+% idx_arrow = [1:2:2*n_arrows-1];
 correct_response = sum(arrow_direction,2)>=3;
+arrow_direction(arrow_direction==0) = 60;
+arrow_direction(arrow_direction==1) = 62;
+% arrows(:,idx_arrow) = arrow_direction;
+% arrows(arrows==0) = 32;
+arrows = arrow_direction;
+
+function print_feedback(TrialInfo)
+
+given_response = arrayfun(@(x) x.Response.key(3), TrialInfo);
+% it could be that someone presses 3 instead of 2 for the 'right' response,
+% thus we replace a 3 with a 2
+given_response(given_response==3) = 2;
+correct_response = arrayfun(@(x) x.trial.correctResponse(3), TrialInfo);
+
+percent_correct = mean(given_response==correct_response)*100;
+
+fprintf(1,'*** T1 CORRECT %2.2f%% ***\n', percent_correct);

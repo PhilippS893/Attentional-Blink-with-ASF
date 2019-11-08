@@ -56,11 +56,22 @@ for iTrial = 1:n_trials
         if Cfg.design.use_ISI && iTrial~=n_trials
             % a page always comes in a duplet (imagenumber presentation
             % duration)
-            fprintf(fID, '%d %d\t%d %d\t', ...
-                trials.stimuli(iTrial,iStimulus), trials.stim_page_duration,...
-                Cfg.stimuli.blank, Cfg.design.timing.ISI_time);
+            
+            if iStimulus==Cfg.design.pages.pre_target1(end)+1              
+                fprintf(fID, '%d %d\t%d %d\t', ...
+                    trials.stimuli(iTrial,iStimulus), trials.stim_page_duration*2,...
+                    Cfg.stimuli.blank, Cfg.design.timing.ISI_time);
+            else
+                fprintf(fID, '%d %d\t%d %d\t', ...
+                    trials.stimuli(iTrial,iStimulus), trials.stim_page_duration,...
+                    Cfg.stimuli.blank, Cfg.design.timing.ISI_time);
+            end
         else
-            fprintf(fID, '%d %d\t',trials.stimuli(iTrial,iStimulus), trials.stim_page_duration);
+            if iStimulus==Cfg.design.pages.pre_target1(end)+1
+                fprintf(fID, '%d %d\t',trials.stimuli(iTrial,iStimulus), trials.stim_page_duration);
+            else
+                fprintf(fID, '%d %d\t',trials.stimuli(iTrial,iStimulus), trials.stim_page_duration);
+            end
         end
     end
     
@@ -75,12 +86,13 @@ for iTrial = 1:n_trials
     % write the second and third response page
     fprintf( fID, '%d %d\t', Cfg.stimuli.blank, trials.response_page_duration );
     fprintf( fID, '%d %d\t', Cfg.stimuli.blank, trials.response_page_duration );
+    fprintf( fID, '%d %d\t', Cfg.stimuli.blank, trials.feedback_page_duration );
     
     % write the response tripled (startpage endpage correct_response)
     if Cfg.design.use_ISI
-        fprintf( fID, '%d %d %d\n', n_stimuli*2+2, n_stimuli*2+4, 1);
+        fprintf( fID, '%d %d %d\n', n_stimuli*2+2, n_stimuli*2+5, 1);
     else
-        fprintf( fID, '%d %d %d\n', n_stimuli+2, n_stimuli+4, 1);
+        fprintf( fID, '%d %d %d\n', n_stimuli+2, n_stimuli+5, 1);
     end
 end
 
@@ -132,6 +144,7 @@ trial.fix_page_duration      = Cfg.design.timing.fixation_time;
 trial.stim_page_duration     = Cfg.design.timing.stimulus_time;
 trial.response_page_duration = Cfg.design.timing.response_time;
 trial.inter_stimulus_interval= Cfg.design.timing.ISI_time;
+trial.feedback_page_duration = Cfg.design.timing.feedback_time;
 
 trial.design_info = {'3';'condition';'short';'long';'ctrl'};
 
@@ -140,6 +153,17 @@ uni_codes = unique( trial.codes );
 % pre allocate some stuff
 pre_t1 = cell( length(uni_codes),1 );
 trial_counter = 0;
+catch_counter = 0;
+catch_category = 1;
+
+% check if the catch trials can be counter balanced
+if mod(Cfg.design.trials_per_condition(2),n_categories)==0
+    n_imgs_for_catch_categories = (Cfg.design.trials_per_condition(2)/n_categories);
+else
+    error('The number of catch trials (condition 2) you submitted cannot be counterbalanced. Choose a number that is divisible by the number of categories you have.');
+end
+
+inter = zeros(1,n_imgs_for_catch_categories);
 % generate trials for each code
 for iCode = 1:length( uni_codes )
     
@@ -180,10 +204,19 @@ for iCode = 1:length( uni_codes )
         % of the if statement here to assign the respective values
         if iCode == uni_codes(end-1)
             
+            catch_counter = catch_counter + 1;
+            if catch_counter > n_imgs_for_catch_categories
+                catch_counter = 1;
+                catch_category = catch_category + 1;
+            end
+            
             tmp = Cfg.T1_idx(trial_counter)+1:Cfg.T1_idx(trial_counter)+Cfg.design.pages.btwn_targets(2);
             % in this case we want a random target
-            T2 = randi([Cfg.stimuli.targets(1) Cfg.stimuli.targets(end)],1,1 );
-
+            T2 = randi([Cfg.design.target_numbers(1,catch_category) Cfg.design.target_numbers(n_targets,catch_category)],1,1 );
+            while catch_counter~=1 && any(T2==inter)
+                T2 = randi([Cfg.design.target_numbers(catch_category,1) Cfg.design.target_numbers(n_targets,catch_category)],1,1 );
+            end
+            inter(catch_counter) = T2;
         elseif iCode == uni_codes(end)
             % this is the case for the control condition
             tmp = Cfg.T1_idx(trial_counter)+1:Cfg.T1_idx(trial_counter)+Cfg.design.pages.btwn_targets(3);

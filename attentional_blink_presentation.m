@@ -58,7 +58,7 @@ if isempty(adjustment)
     adjustment.trial_ctr = 1;
     % proportion of condition 1 trials
     %prop = Cfg.design.n_trials*Cfg.design.condition_proportions(1);
-    prop = 70;
+    prop = Cfg.design.trials_per_condition(1);
     adjustment.correct_rsp = zeros(prop, 2);
     adjustment.this_duration = Cfg.design.timing.stimulus_time;
     adjustment.page_idcs = 2:Cfg.design.pages.stim_per_trial+1;
@@ -78,44 +78,37 @@ confound_color          = Cfg.txture.confound_color;
 
 atrial.nPages = length(atrial.pageNumber); % how many pages in this trial
 responseCounter = 0; % counts the number of responses given
-responsePages = atrial.nPages-2:atrial.nPages;  % the last three pages are response pages
+responsePages = atrial.nPages-3:atrial.nPages;  % the last four pages are response pages
 [~,n_categories] = size(Cfg.design.target_numbers);
 
-page_idx_t1 = Cfg.T1_idx(atrial.trialNumber)+1;
-%page_idx_t2 = 1 + Cfg.T2_idx(atrial.trialNumber);
+% what is the page number of target 1
+page_number_t1 = Cfg.T1_idx(atrial.trialNumber)+1;
 
 % the correct responses for this experiment are 3-fold:
-% 1. did you see this image among the ones presented? Yes/No answer
+% 1. which of the 2 presented images did you see?
 % 2. subjective evaluation of how well one saw the image of (1)
-% 3. selecting the correct answer to the math task
+% 3. did more arrows point left or right?
 atrial.correctResponse(1) = 11;
 % since this response 2 is a subjective measure, we don't really care
 atrial.correctResponse(2) = 1; 
 atrial.correctResponse(3) = 1; % this will get changed within each trial
 
-% create 3 random numbers that are projected onto the stimuli. Numbers can
-% occur in two back-to-back presentations but not on the same location. We
-% use 'diff' to account for that
-% vals = zeros(nPages,3);
-% while any(any(diff(vals)==0))
-%     vals = randi([2 9],nPages,3);
-% end
-
-if any(atrial.code==1:n_categories+1)
+if any( atrial.code == 1:n_categories+1 )
     T2_idx = Cfg.T2_idx(atrial.trialNumber)+1;
     pic1 = atrial.pageNumber(T2_idx);
 else
+    % for condition 3 trials choose a random target image to choose
     pic1 = randi([Cfg.design.target_numbers(1) Cfg.design.target_numbers(end)],1,1);
 end
 
 [~,C] = ind2sub(size(Cfg.design.target_numbers),find(Cfg.design.target_numbers==pic1));
 
+% choose a second "target" for the first response to be from the same
+% category as pic1
 randT2 = randi([Cfg.design.target_numbers(1,C) Cfg.design.target_numbers(end,C)],1,1);
 while randT2==pic1
     randT2 = randi([Cfg.design.target_numbers(1,C) Cfg.design.target_numbers(end,C)],1,1);
 end
-        
-
 %%%%%%%% PS CODE END %%%%%%%%
 
 
@@ -127,27 +120,16 @@ strDate = datestr(now); %store when trial was presented
 % IMMEDIATELY OR USER DEFINED (E.G. IN fMRI EXPERIMENTS)
 %--------------------------------------------------------------------------
 
-% %JS METHOD: LOOP
-% %IF EXTERNAL TIMING REQUESTED (e.g. fMRI JITTERING)
-% if Cfg.useTrialOnsetTimes
-%     while((GetSecs- Cfg.experimentStart) < atrial.tOnset)
-%     end
-% end
-% %LOG TIME OF TRIAL ONSET WITH RESPECT TO START OF THE EXPERIMENT
-% %USEFUL FOR DATA ANALYSIS IN fMRI
-% tStart = GetSecs - Cfg.experimentStart;
-
-%SUGGESTED METHOD: TIMED WAIT
 %IF EXTERNAL TIMING REQUESTED (e.g. fMRI JITTERING)
 if Cfg.useTrialOnsetTimes
     wakeupTime = WaitSecs('UntilTime', Cfg.experimentStart + atrial.tOnset);
 else
     wakeupTime = GetSecs;
 end
+
 %LOG TIME OF TRIAL ONSET WITH RESPECT TO START OF THE EXPERIMENT
 %USEFUL FOR DATA ANALYSIS IN fMRI
 tStart = wakeupTime - Cfg.experimentStart;
-
 
 if Cfg.Eyetracking.doDriftCorrection
     EyelinkDoDriftCorrect(Cfg.Eyetracking.el);
@@ -173,32 +155,32 @@ for i = 1:atrial.startRTonPage-1
         Screen('DrawTexture', windowPtr, Stimuli.tex(atrial.pageNumber(i)));
         
         %%%%%%%% PS CODE %%%%%%%%
-        % We want to superimpose numbers ontop of the stimuli
-        if i > 1 && i ~= page_idx_t1 && atrial.pageNumber(i)~=Cfg.stimuli.blank && ...
+        % We want to superimpose arrows ontop of the stimuli
+        if i > 1 && i ~= page_number_t1 && atrial.pageNumber(i)~=Cfg.stimuli.blank && ...
                 ~any( ismember( atrial.pageNumber(i), Cfg.stimuli.targets ) )
             
+            % only overlay arrows on the confounds if the user wants to.
             if Cfg.design.overlay(i)
                 [arrows, ~] = generate_arrow_vector(1,5);
+                % the randomly generated arrows should not equal those used
+                % for T1
                 while all(arrows==Cfg.arrow_for_T1(atrial.trialNumber,:))
                     [arrows, ~] = generate_arrow_vector(1,5);
                 end
-                msg = char(arrows);
+                msg = sprintf('%s ', char(arrows));
                 Screen('TextSize',windowPtr, T1_font_size);
                 DrawFormattedText(windowPtr, msg,'center','center',confound_color);
                 Screen('TextSize',windowPtr, standard_font_size);
             end
                         
-        elseif i == page_idx_t1
+        elseif i == page_number_t1
             
-%             math_result = vals(i,1)+vals(i,3);
-%             msg = sprintf('%d+%d',vals(i,1),vals(i,3));
             msg = char(Cfg.arrow_for_T1(atrial.trialNumber,:));
             Screen('TextSize',windowPtr, T1_font_size);
             DrawFormattedText(windowPtr, msg,'center','center',target_color);
             Screen('TextSize',windowPtr, standard_font_size);
             
         end
-        
         %%%%%%%% PS CODE END %%%%%%%%
         
         %PRESERVE BACK BUFFER IF THIS TEXTURE IS TO BE SHOWN
@@ -213,7 +195,6 @@ for i = 1:atrial.startRTonPage-1
         
         %SET TRIGGER (PARALLEL PORT AND EYELINK)
         ASF_setTrigger(Cfg, atrial.pageNumber(i));
-        
         
         %LOG WHEN THIS PAGE APPEARED
         timing(i, 1:6) = [atrial.pageDuration(i), VBLTimestamp,...
@@ -261,33 +242,20 @@ for i = atrial.startRTonPage:atrial.endRTonPage
         Screen('DrawTexture', windowPtr, Stimuli.tex(1));
         
         %%%%%%%% PS CODE %%%%%%%%
-        % DEPENDING ON THE RESPONSE PAGE WE WANT TO PRESENT DIFFERENT
-        % THINGS
+        % Depending on the response page, we want to present different
+        % things:
         if i == responsePages(1)
             
-            % WE WANT TO HAVE TWO IMAGES SIDE BY SIDE. FOR THIS WE NEED TO
-            % SEPARATE THE SCREEN INTO CERTAIN RECTANGLES TO PLACE THE
-            % IMAGES ACCORDINGLY
+            % We want to have two images side by side. For this, we need to
+            % separate the screen into certain rectangles to place the
+            % images accordingly
             x = Cfg.Screen.rect(3) - Cfg.Screen.rect(1);
             y = Cfg.Screen.rect(4) - Cfg.Screen.rect(2);
-            
-            %Assuming that your pictures have a ratio of 4:3, you can place them nicely
-            %on a 15 by 7 grid (count the columns (x) and rows (y) in the graph below
-            
-            % ---------------
-            % ---------------
-            % --oooo---oooo--
-            % --oooo---oooo--
-            % --oooo---oooo--
-            % ---------------
-            % ---------------
-            
+                        
             %destinationRectangles  are defined as
             %[UpperLeftX, UpperLeftY, LowerRightX, LowerRightY]
             destinationRect1 = ceil([x/15*5 y/9*4 x/15*7 y/9*6]); %LEFT
             destinationRect2 = ceil([x/15*8 y/9*4 x/15*10 y/9*6]); %RIGHT
-            
-            
             
             if randi([0,1],1,1) % if this is true, the correct response is left
                 atrial.correctResponse(1) = Cfg.enabledKeys(1);
@@ -299,17 +267,14 @@ for i = atrial.startRTonPage:atrial.endRTonPage
                 Screen('DrawTexture', windowPtr, Stimuli.tex(randT2),[],destinationRect1);
             end
             
-            % set the correct response
-%             if ~(atrial.pageNumber(i) == atrial.pageNumber(page_idx_t2))
-%                 atrial.correctResponse(1) = Cfg.enabledKeys(2);
-%             end
-%             
             msg = sprintf('Which image did you see?');
             Screen('TextSize',windowPtr, instruction_font_size);
             DrawFormattedText(windowPtr, msg,'center',350,confound_color);
             Screen('TextSize',windowPtr, standard_font_size);
             
         elseif i == responsePages(2)
+            % Here, we want to present the subject with a choice of how
+            % well they percieved t2
             
             msg = sprintf('What was your experience of T2?\n\n none    vague    clear');
             Screen('TextSize',windowPtr, instruction_font_size);
@@ -317,38 +282,40 @@ for i = atrial.startRTonPage:atrial.endRTonPage
             Screen('TextSize',windowPtr, standard_font_size);
             
         elseif i == responsePages(3)
+            % here, we present the subject with a choice of directions in
+            % which more arrows pointed toward.
             
-%             % generate 2 random results among which the participant has to
-%             % choose the correct one.
-%             rnd_results = randi([2 18], 1, 2);
-%             % generate them until there are two pseudo results that don't
-%             % match the actual result
-%             while sum( any( rnd_results == math_result) ) > 0 || ...
-%                     length( unique( rnd_results ) ) ~= 2
-%                 rnd_results = randi([2 18], 1, 2);
-%             end
-%             
-%             % generate a permutation, such that the actual result is not
-%             % always at the same location
-%             permutation = randperm(3);
-%             for_msg(permutation) = [rnd_results, math_result];
-%             
-%             % save the correct response for this trial
-%             atrial.correctResponse(3) = Cfg.enabledKeys( for_msg == math_result );
-
-            if Cfg.t1_correct_response(adjustment.trial_ctr)
+            if Cfg.t1_correct_response(atrial.trialNumber)
                 atrial.correctResponse(3) = Cfg.enabledKeys(2);
             else
                 atrial.correctResponse(3) = Cfg.enabledKeys(1);
             end
             
-            % print the addition task in red
-%             msg = sprintf('What was the result of T1?\n1. %d\n2. %d\n3. %d', for_msg(1), for_msg(2), for_msg(3));
             msg = sprintf('More arrows pointing:\n\nleft     right');
             Screen('TextSize',windowPtr, instruction_font_size);
             DrawFormattedText(windowPtr, msg,'center','center',confound_color);
             Screen('TextSize',windowPtr, standard_font_size);
+           
+        elseif i == responsePages(4)
+            % here we just give feedback to the subject if their response
+            % to T1 was in-/correct
             
+            % we don't need a response here, so turn that off
+            allowResponse = 0;
+            
+            % in case the user wants to present the T1 feedback in color,
+            % assign that here
+            fb_color = confound_color;
+            if atrial.correctResponse(3)==this_response.key(3)
+                msg = sprintf('T1 correct');
+                if Cfg.design.use_feedback_color; fb_color = [0,255,0]; end
+            else
+                msg = sprintf('T1 incorrect');
+                if Cfg.design.use_feedback_color; fb_color = [255,0,0]; end
+            end
+            Screen('TextSize',windowPtr, instruction_font_size);
+            DrawFormattedText(windowPtr, msg,'center','center',fb_color);
+            Screen('TextSize',windowPtr, standard_font_size);
         end
         %%%%%%%% PS CODE END %%%%%%%%
 
@@ -383,6 +350,13 @@ for i = atrial.startRTonPage:atrial.endRTonPage
             %WITH RESPONSE COLLECTION
             %---------------------------
             
+            % this is not very elegant but it seems that the button press
+            % on keyboards is stored for to long (or the program continues
+            % to fast) and thus the keypress for the previous response is
+            % still true, effectively being used for all 3 responses.
+            if strcmp(Cfg.responseDevice,'KEYBOARD')
+                pause(.1)
+            end
             
             [x, y, buttons, t0, t1] =...
                 ASF_waitForResponse(Cfg, pageDuration_in_sec - toleranceSec);
@@ -410,8 +384,9 @@ for i = atrial.startRTonPage:atrial.endRTonPage
                         %A BUTTON HAS BEEN PRESSED BEFORE TIMEOUT
                         %WAIT OUT THE REMAINDER OF THE STIMULUS DURATION WITH
                         %MARGIN OF toleranceSec
-%                         wakeupTime = WaitSecs('UntilTime',...
-%                             StimulusOnsetTime + pageDuration_in_sec - toleranceSec);
+%                         if i == atrial.nPages
+%                             wakeupTime = WaitSecs('UntilTime', t1 + .5);
+%                         end
                 end
             else
                 responseCounter = responseCounter + 1;
@@ -524,7 +499,6 @@ end
 %--------------------------------------------------------------------------
 
 %%%%%%%% PS CODE %%%%%%%%
-
 % Set some variables based on responses given.
 if any(atrial.code==1:n_categories)
     
